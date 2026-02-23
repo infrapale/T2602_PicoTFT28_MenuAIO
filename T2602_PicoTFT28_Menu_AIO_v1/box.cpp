@@ -31,7 +31,7 @@
 #include "atask.h"
 #include <SPI.h>
 
-#define BOX_TOTAL_NBR_OF    (1 + TFT_LS_ROWS + (TFT_LS_ROWS/2) + (TFT_LS_ROWS/4) + 3)
+#define BOX_MAX_NUMBER      32
 #define BOX_DEFAULT_GROUP   0
 
 typedef struct
@@ -57,17 +57,24 @@ typedef struct
     uint16_t text_color;
 } box_color_st;
 
-SPISettings mySPISettings(1000000, MSBFIRST, SPI_MODE0); // 4 MHz clock
+typedef struct 
+{
+    uint8_t nbr;
+    uint8_t reserve;
+} box_ctrl_st;
+
+SPISettings mySPISettings(4000000, MSBFIRST, SPI_MODE0); // 4 MHz clock
 extern TFT_eSPI tft;
 
 box_group_st boxgr[BOX_GROUP_NBR_OF] =
 {
-    [BOX_GROUP_1]       = {.height=TFT_LS_HIGHT,                    .width=TFT_LS_WIDTH,    .round = 0, .nbr=1,             .index = 0, .font_indx = BOX_FONT_XXL_75,       .font_size = 2 },
-    [BOX_GROUP_8]       = {.height=TFT_LS_HIGHT / TFT_LS_ROWS,      .width=TFT_LS_WIDTH,    .round = 0, .nbr=TFT_LS_ROWS,   .index = 0, .font_indx = BOX_FONT_SMALL_16,     .font_size = 1 },
-    [BOX_GROUP_4]       = {.height=TFT_LS_HIGHT / TFT_LS_ROWS * 2,  .width=TFT_LS_WIDTH,    .round = 0, .nbr=TFT_LS_ROWS/2, .index = 0, .font_indx = BOX_FONT_LARGE_48,     .font_size = 1 },
-    [BOX_GROUP_3]       = {.height=TFT_LS_HIGHT / 3,                .width=TFT_LS_WIDTH,    .round = 0, .nbr=3,             .index = 0, .font_indx = BOX_FONT_XXL_75,       .font_size = 1 },
-    [BOX_GROUP_2]       = {.height=TFT_LS_HIGHT / TFT_LS_ROWS * 4,  .width=TFT_LS_WIDTH,    .round = 0, .nbr=TFT_LS_ROWS/4, .index = 0, .font_indx = BOX_FONT_7_SEGM_48,    .font_size = 2 },
-    [BOX_GROUP_MENU]    = {.height=TFT_LS_HIGHT / TFT_LS_ROWS ,     .width=TFT_LS_WIDTH/3,  .round = 6,.nbr=3,             .index = 0, .font_indx = BOX_FONT_MEDIUM_26,    .font_size = 1 },
+    [BOX_GROUP_1]           = {.height=TFT_LS_HIGHT,                    .width=TFT_LS_WIDTH,    .round = 0, .nbr=1,             .index = 0, .font_indx = BOX_FONT_XXL_75,       .font_size = 2 },
+    [BOX_GROUP_8]           = {.height=TFT_LS_HIGHT / TFT_LS_ROWS,      .width=TFT_LS_WIDTH,    .round = 0, .nbr=TFT_LS_ROWS,   .index = 0, .font_indx = BOX_FONT_SMALL_16,     .font_size = 1 },
+    [BOX_GROUP_4]           = {.height=TFT_LS_HIGHT / TFT_LS_ROWS * 2,  .width=TFT_LS_WIDTH,    .round = 0, .nbr=TFT_LS_ROWS/2, .index = 0, .font_indx = BOX_FONT_LARGE_48,     .font_size = 1 },
+    [BOX_GROUP_3]           = {.height=TFT_LS_HIGHT / 3,                .width=TFT_LS_WIDTH,    .round = 0, .nbr=3,             .index = 0, .font_indx = BOX_FONT_XXL_75,       .font_size = 1 },
+    [BOX_GROUP_2]           = {.height=TFT_LS_HIGHT / TFT_LS_ROWS * 4,  .width=TFT_LS_WIDTH,    .round = 0, .nbr=TFT_LS_ROWS/4, .index = 0, .font_indx = BOX_FONT_7_SEGM_48,    .font_size = 2 },
+    [BOX_GROUP_MENU]        = {.height=TFT_LS_HIGHT / TFT_LS_ROWS ,     .width=TFT_LS_WIDTH/3,  .round = 0, .nbr=3,             .index = 0, .font_indx = BOX_FONT_MEDIUM_26,    .font_size = 1 },
+    [BOX_GROUP_HEAD_ROOM]   = {.height=TFT_LS_HIGHT / TFT_LS_ROWS * 7,  .width=TFT_LS_WIDTH,    .round = 0, .nbr=1,             .index = 0, .font_indx = BOX_FONT_MEDIUM_26,     .font_size = 1 },
 };
 
 box_color_st box_color_scheme[10] PROGMEM =
@@ -83,8 +90,9 @@ box_color_st box_color_scheme[10] PROGMEM =
     [8] = {.fill_color = TFT_MAROON,        .border_color = TFT_SILVER,         .text_color = TFT_WHITE },
     [9] = {.fill_color = TFT_DARKCYAN,      .border_color = TFT_WHITE,          .text_color = TFT_WHITE },
     // [9] = {.fill_color = TFT_CYAN,          .border_color = TFT_MAGENTA,        .text_color = TFT_MAGENTA },
-
 };
+
+box_ctrl_st box_ctrl = {0};
 
 // #define TFT_BLACK       0x0000      /*   0,   0,   0 */
 // #define TFT_NAVY        0x000F      /*   0,   0, 128 */
@@ -112,7 +120,7 @@ box_color_st box_color_scheme[10] PROGMEM =
 // #define TFT_VIOLET      0x915C      /* 180,  46, 226 */
 
 
-box_st  box[BOX_TOTAL_NBR_OF];
+box_st  box[BOX_MAX_NUMBER];
 
   // x    y    w    h   label  fon f  fill color  border color  text color
 //   {  0,   0, 319, 172, "Box 0", 4, 1, TFT_BLACK, TFT_LIGHTGREY, TFT_LIGHTGREY },
@@ -146,7 +154,7 @@ void box_initialize(void)
 
 
     uint8_t bindx = 0;
-    for (bindx = 0; bindx < BOX_TOTAL_NBR_OF; bindx++)
+    for (bindx = 0; bindx < box_ctrl.nbr; bindx++)
     {
         box[bindx].visible = true;
         box[bindx].font_indx = 4;
@@ -186,13 +194,34 @@ void box_initialize(void)
             );
             box[bindx].visible = true;
             bindx++;
+            if(bindx >= BOX_MAX_NUMBER) {
+                Serial.println("!!!! ERROR MAX BOX NUMBER EXCEEDED !!!!");
+                box_group =99;
+                break;
+            }
             if (box_group == BOX_GROUP_MENU)
                 xpos += boxgr[box_group].width;
             else
                 ypos += boxgr[box_group].height;
         }
     } 
+    box_ctrl.nbr = bindx - 1;
 }
+
+void box_reserve(uint8_t res_bm)
+{
+    box_ctrl.reserve  |= res_bm;
+}
+void box_release(uint8_t res_bm)
+{
+    box_ctrl.reserve  &= ~res_bm;
+}
+
+bool box_is_not_reserved(void)
+{
+    return (box_ctrl.reserve == 0);
+}
+
 
 uint8_t box_get_indx(uint8_t box_group, uint8_t bindx)
 {
@@ -243,7 +272,7 @@ void box_show_group(uint8_t box_group)
 
 void box_show_all(void)
 {
-    for( uint8_t bindx = 0; bindx < BOX_TOTAL_NBR_OF; bindx++ )
+    for( uint8_t bindx = 0; bindx < box_ctrl.nbr; bindx++ )
     {
         if(  box[bindx].visible)
         {
@@ -255,7 +284,7 @@ void box_show_all(void)
 
 void box_hide_all(void)
 {
-    for( uint8_t bindx = 0; bindx < BOX_TOTAL_NBR_OF; bindx++ )
+    for( uint8_t bindx = 0; bindx < box_ctrl.nbr; bindx++ )
     {
         box[bindx].visible = false;
     }
@@ -352,7 +381,7 @@ void box_structure_print(void)
         );
     }
 
-    for (uint8_t i = 0; i < BOX_TOTAL_NBR_OF; i++ )
+    for (uint8_t i = 0; i < box_ctrl.nbr; i++ )
     {
         Serial.printf("%d: %d %d %d %d %d %d %d %d %d %d %d \n",
             i,

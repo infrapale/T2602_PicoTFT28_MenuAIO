@@ -22,7 +22,7 @@
 #define UNIT_LABEL_LEN      10
 #define MEASURE_LABEL_LEN   16
 
-#define APP_NAME   "T2602_PicoTFT28_AIO"
+#define APP_NAME   "T2602_PicoTFT28_AIO_v1"
 #define MAIN_TITLE "Villa Astrid Console"
 
 typedef enum 

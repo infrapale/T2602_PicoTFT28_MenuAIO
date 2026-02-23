@@ -70,22 +70,15 @@ menu_row_st menu[MENU_NBR_OF] =
   }
 };
 
-menu_box_st menu_box[4] =
-{
-    {   5, 180, 312, 16, NULL },
-    {   5, 200, 100, 32, NULL },
-    { 110, 200, 100, 32, NULL },
-    { 216, 200, 100, 32, NULL},  
-};
 
 menu_ctrl_st menu_ctrl = {ATASK_NOT_DEFINED,  MENU_MAIN};
 
 BtnPinOnOff  menu_btn[NBR_MENU_KEYS];
 
-void menu_read_machine(void);
+void menu_state_machine(void);
 
 //                                  123456789012345   ival  next  state  prev  cntr flag  call backup
-atask_st menu_key_task_handle =   {"Menu Key Task  ", 100,    0,     0,  255,    0,   1, menu_read_machine };
+atask_st menu_th =                {"Menu State     ", 100,    0,     0,  255,    0,   1, menu_state_machine };
 atask_st menu_key_scan_handle =   {"Menu Key Scan  ", 10,     0,     0,  255,    0,   1, menu_button_scan };
 
 
@@ -96,14 +89,13 @@ void menu_initialize(void)
   menu_btn[2].Init(PIN_KEY3,'1', true);
   menu_btn[3].Init(PIN_KEY_STATUS,'0', false);
 
-  atask_add_new(&menu_key_task_handle);
+  atask_add_new(&menu_th);
   atask_add_new(&menu_key_scan_handle);
   menu_draw();
 
 }
 
-
-void menu_read_machine(void)
+char menu_read(void)
 {
   char c = menu_read_button();
   if (c != 0x00) 
@@ -114,10 +106,59 @@ void menu_read_machine(void)
           Serial.printf("Off");
       Serial.printf(" %c\n",c & 0b01111111);
       c &=  0b01111111;
-      menu_btn_pressed(c);
+      //menu_btn_pressed(c);
   }
-
+  return c;
 }
+
+void menu_state_machine(void)
+{
+    static char     keyc = 0x00;
+    static uint32_t menu_timeout;
+    static uint8_t  menu_hr  = box_get_indx(BOX_GROUP_HEAD_ROOM, 0);
+    char txt[20];
+
+    switch(menu_th.state)
+    {
+        case 0:
+            menu_th.state = 10;
+            break;
+        case 10:
+            keyc = menu_read();
+            if(keyc != 0x00) menu_th.state = 20;
+            // else dashboard 
+            break;
+        case 20:
+            menu_btn_pressed(keyc);
+            menu_th.state = 20;
+            box_reserve(BOX_RESERVE_MENU);
+            box_paint(menu_hr, 6);
+            sprintf(txt, "key pressed: %c", keyc);
+            box_print_text(menu_hr, txt);
+            box_show_one(menu_hr);
+            menu_timeout = millis() + 10000;
+            menu_th.state = 30; 
+        case 30:
+            keyc = menu_read();
+            if(keyc != 0x00) {
+                menu_th.state = 20; 
+            }
+            else {
+                if (millis() > menu_timeout){
+                    box_print_text(menu_hr, (char*)"menu timeout");
+                    box_show_one(menu_hr);
+                    menu_th.state = 10; 
+                    box_release(BOX_RESERVE_MENU);
+                }              
+            }
+            break;
+        case 40:
+            menu_th.state = 10;
+            break;
+    }
+}
+
+
 
 void menu_draw(void)
 {
@@ -129,20 +170,11 @@ void menu_draw(void)
     box_clear(bindx);
     box_paint(bindx, 0);
 
-    // tft.setTextSize(1);
-    // tft.setTextColor(TFT_WHITE, TFT_DARKCYAN, false);
-    // tft.fillRect(menu_box[0].x_pos, menu_box[0].y_pos, menu_box[0].width, menu_box[0].height, TFT_DARKCYAN);
-    // tft.drawString( menu[menu_ctrl.active].row_label, menu_box[0].x_pos+4, menu_box[0].y_pos, 2);
-
-    //tft.setTextSize(1);
-    //tft.setTextColor(TFT_WHITE, TFT_DARKCYAN, false);
     bindx = box_get_indx(BOX_GROUP_MENU, 0);
     for (uint8_t i = 0; i < 3; i++)
     {
         box_paint(bindx+i, 9);
         box_print_text(bindx+i, menu[menu_ctrl.active].menu_item[i+1].label);
-        // tft.fillRoundRect(menu_box[i].x_pos, menu_box[i].y_pos, menu_box[i].width, menu_box[i].height, 5, TFT_DARKCYAN);
-        // tft.drawString( menu[menu_ctrl.active].menu_item[i].label, menu_box[i].x_pos+4, menu_box[i].y_pos+4, 4);
     }
     box_show_group(BOX_GROUP_MENU);
 

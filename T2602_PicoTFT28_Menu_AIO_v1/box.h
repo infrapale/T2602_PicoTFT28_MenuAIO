@@ -20,6 +20,7 @@ typedef enum
     BOX_GROUP_3,
     BOX_GROUP_2,
     BOX_GROUP_MENU,
+    BOX_GROUP_HEAD_ROOM,
     BOX_GROUP_NBR_OF
 } box_group_et;
 
@@ -32,6 +33,13 @@ typedef enum
     BOX_FONT_7_SEGM_48  = 7,
     BOX_FONT_XXL_75     = 8,
 } box_font_et;
+
+typedef enum 
+{
+    BOX_RESERVE_MENU    = 0b00000001,
+    BOX_RESERVE_NONE    = 0b00000000,
+} box_reserve_et;
+
 
 typedef struct 
 {
@@ -46,6 +54,13 @@ typedef struct
 
 
 void box_initialize(void);
+
+void box_reserve(uint8_t res_bm);
+
+void box_release(uint8_t res_bm);
+
+bool box_is_not_reserved(void);
+
 
 uint8_t box_get_indx(uint8_t box_group, uint8_t bindx);
 

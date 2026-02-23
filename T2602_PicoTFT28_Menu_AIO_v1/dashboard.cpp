@@ -97,8 +97,6 @@ typedef struct
     uint8_t     pir_value;
 } dashboard_backlight_st;
 
-//SPISettings mySPISettings(1000000, MSBFIRST, SPI_MODE0); // 4 MHz clock
-
 dashboard_ctrl_st dashboard_ctrl    = {DASHBOARD_TIME_SENSOR, false, true, false, AIO_SUBS_LA_ID_TEMP, 0, 0, false};
 
 // extern value_st subs_data[];
@@ -156,10 +154,15 @@ atask_st bl_task                    =   {"Backlight task ", 1000,   0,     0,  2
 
 void dashboard_clear(void)
 {
-    tft.setRotation(3);
-    tft.setTextSize(1);
-    tft.fillScreen(TFT_BLACK);
-    dashboard_draw_box(0);  // clear dashboard
+    // tft.setRotation(3);
+    // tft.setTextSize(1);
+    // tft.fillScreen(TFT_BLACK);
+    if (box_not_reserved()){
+        uint8_t bindx = box_get_indx(BOX_GROUP_1, 0);
+        box_paint(bindx, 0);
+        // box_print_text(bindx, menu[menu_ctrl.active].row_label);
+        box_show_one(bindx);
+    } 
 }
 
 void dashboard_initialize(void)
@@ -167,29 +170,29 @@ void dashboard_initialize(void)
     atask_add_new(&dashboard_task_handle);
     atask_add_new(&bl_task);
 
-    pinMode(PIN_TFT_LED, OUTPUT);
-    pinMode(PIN_PIR_INP,INPUT);
-    pinMode(PIN_LDR_ANALOG_INP,INPUT);
-    analogReadResolution(12);
-    analogWrite(PIN_TFT_LED,200);
+    // pinMode(PIN_TFT_LED, OUTPUT);
+    // pinMode(PIN_PIR_INP,INPUT);
+    // pinMode(PIN_LDR_ANALOG_INP,INPUT);
+    // analogReadResolution(12);
+    // analogWrite(PIN_TFT_LED,200);
     
-    //SPI.beginTransaction(mySPISettings);
-    tft.init();
+    // //SPI.beginTransaction(mySPISettings);
+    // tft.init();
     dashboard_clear();
-    tft.fillScreen(TFT_MAROON);
+    // tft.fillScreen(TFT_MAROON);
 }
 
 
 
 
-void dashboard_draw_box(uint8_t bindx)
-{
-    tft.setTextSize(db_box[bindx].font_size);
-    tft.setTextColor(db_box[bindx].text_color, db_box[bindx].fill_color, false);
-    tft.fillRect(db_box[bindx].x_pos, db_box[bindx].y_pos, db_box[bindx].width, db_box[bindx].height, db_box[bindx].fill_color);
-    tft.drawString( db_box[bindx].txt , db_box[bindx].x_pos+4, db_box[bindx].y_pos+2, db_box[bindx].font_indx);
-    //Serial.print("Box: "); Serial.print(bindx); Serial.print(" = ");Serial.println(db_box[bindx].txt);
-}
+// void dashboard_draw_box(uint8_t bindx)
+// {
+//     tft.setTextSize(db_box[bindx].font_size);
+//     tft.setTextColor(db_box[bindx].text_color, db_box[bindx].fill_color, false);
+//     tft.fillRect(db_box[bindx].x_pos, db_box[bindx].y_pos, db_box[bindx].width, db_box[bindx].height, db_box[bindx].fill_color);
+//     tft.drawString( db_box[bindx].txt , db_box[bindx].x_pos+4, db_box[bindx].y_pos+2, db_box[bindx].font_indx);
+//     //Serial.print("Box: "); Serial.print(bindx); Serial.print(" = ");Serial.println(db_box[bindx].txt);
+// }
 
 void dashboard_draw_basic_rows(void)
 {
@@ -213,29 +216,13 @@ void dashboard_set_mode(dashboard_mode_et new_mode)
 
 }
 
-void dashboard_print_row(int8_t rindx, char *txtp, uint16_t txt_colour, uint16_t bgnd_colour)
+void dashboard_print_row(int8_t rindx, char *txtp, uint8_t color_scheme)
 {
-    uint8_t target_row_indx = (uint8_t)rindx;
-    if (rindx < 0) {
-        target_row_indx = dashboard_ctrl.basic_row_indx;
-        if (target_row_indx >= NBR_BASIC_ROWS -1) 
-        {
-            for (uint8_t i = 1; i < NBR_BASIC_ROWS; i++) {
-                memcpy(basic_row[i-1].txt, basic_row[i].txt, BASIC_ROW_LEN );
-                basic_row[i-1].text_color = basic_row[i].text_color;
-                basic_row[i-1].background_color = basic_row[i].background_color;
-            }
-        }
-        else {
-            dashboard_ctrl.basic_row_indx++;
-            target_row_indx = dashboard_ctrl.basic_row_indx;
-        }
-    }
-    if (target_row_indx  > NBR_BASIC_ROWS -1) target_row_indx = NBR_BASIC_ROWS -1;
-    memcpy(basic_row[target_row_indx].txt, txtp, BASIC_ROW_LEN );
-    basic_row[target_row_indx].text_color = txt_colour;
-    basic_row[target_row_indx].background_color = bgnd_colour;
-    dashboard_ctrl.basic_row_updated = true;
+    uint8_t bindx = box_get_indx(BOX_GROUP_8, 0);
+    box_scroll_down( BOX_GROUP_8);
+    box_paint(bindx, color_scheme);
+    box_print_text(bindx, txtp);
+    box_show_one(bindx);
 }
 
 void dashboard_update_all(void)
@@ -253,23 +240,27 @@ void dashboard_set_text(uint8_t box_indx, char *txt_ptr)
 
 void dashboard_big_time(void)
 {
-    static uint8_t prev_minute = 99;
+    static uint8_t p
+    rev_minute = 99;
+    char big_txt[8];
+    uint8_t bindx = box_get_indx(BOX_GROUP_3, 1);
+
     DateTime *now = time_get_time_now();
     if ((now->minute() != prev_minute) || dashboard_ctrl.force_show_big_time)
     {
         prev_minute = now->minute();
         char s1[4];
         
-        db_box[BOX_ROW_3].txt[0] = 0x00;
-        dashboard_draw_box(BOX_ROW_3);
-    
         sprintf(s1,"%02d",now->hour());
         String time_str = s1;
         time_str += ":";
         sprintf(s1,"%02d",now->minute());
         time_str += s1;
-        time_str.toCharArray(db_box[BOX_MID_LARGE].txt, TXT_LEN);
-        dashboard_draw_box(BOX_MID_LARGE);
+        time_str.toCharArray(big_txt, 8);
+        box_paint(bindx, 2);
+        box_print_text(bindx, big_txt);
+        box_show_one(bindx);
+
     }
 }
 
@@ -280,17 +271,17 @@ void dashboard_show_info(void)
     Str_info += __DATE__;
     Str_info += __TIME__;
 
-    strcpy(db_box[BOX_UPPER_LARGE].txt, " ");
-    dashboard_draw_box(BOX_UPPER_LARGE);
+    // strcpy(db_box[BOX_UPPER_LARGE].txt, " ");
+    // dashboard_draw_box(BOX_UPPER_LARGE);
  
-    strcpy(db_box[BOX_ROW_1].txt, APP_NAME);
-    dashboard_draw_box(BOX_ROW_1);
+    // strcpy(db_box[BOX_ROW_1].txt, APP_NAME);
+    // dashboard_draw_box(BOX_ROW_1);
 
-    strcpy(db_box[BOX_ROW_2].txt, __DATE__);
-    dashboard_draw_box(BOX_ROW_2);
+    // strcpy(db_box[BOX_ROW_2].txt, __DATE__);
+    // dashboard_draw_box(BOX_ROW_2);
 
-    strcpy(db_box[BOX_ROW_3].txt, __TIME__);
-    dashboard_draw_box(BOX_ROW_3);
+    // strcpy(db_box[BOX_ROW_3].txt, __TIME__);
+    // dashboard_draw_box(BOX_ROW_3);
 
     // Str_info.toCharArray(db_box[0].txt, TXT_LEN);
 
