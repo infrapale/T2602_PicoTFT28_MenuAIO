@@ -1,5 +1,5 @@
 /************************************************************************
-    BOX_GROUP_1   BOX_GROUP_8   BOX_DIM4    BOX_GROUP_2   BOX_GROUP_3
+    BOX_GROUP_1   BOX_GROUP_12   BOX_DIM4    BOX_GROUP_2   BOX_GROUP_3
     ---------   ---------   --------    ---------   ---------
     |       |   |       |   |       |   |       |   |       |  
     |       |   ---------   |       |   |       |   |       |  
@@ -24,12 +24,10 @@
 
 #include "main.h"
 #include "box.h"
-//#include "dashboard.h"
-//#include "aio_mqtt.h"
-//#include "time_func.h"
-//#include "menu.h"
 #include "atask.h"
 #include <SPI.h>
+#include <TFT_eSPI.h> 
+
 
 #define BOX_MAX_NUMBER      32
 #define BOX_DEFAULT_GROUP   0
@@ -59,36 +57,47 @@ typedef struct
 
 typedef struct 
 {
+    uint8_t top;
+    uint8_t last;
+} box_print_area_st;
+
+
+typedef struct 
+{
     uint8_t nbr;
     uint8_t reserve;
+    box_print_area_st print_area;
 } box_ctrl_st;
 
 SPISettings mySPISettings(4000000, MSBFIRST, SPI_MODE0); // 4 MHz clock
-extern TFT_eSPI tft;
+TFT_eSPI tft = TFT_eSPI();  // Invoke library, pins defined in User_Setup.h
+//extern TFT_eSPI tft;
 
 box_group_st boxgr[BOX_GROUP_NBR_OF] =
 {
-    [BOX_GROUP_1]           = {.height=TFT_LS_HIGHT,                    .width=TFT_LS_WIDTH,    .round = 0, .nbr=1,             .index = 0, .font_indx = BOX_FONT_XXL_75,       .font_size = 2 },
-    [BOX_GROUP_8]           = {.height=TFT_LS_HIGHT / TFT_LS_ROWS,      .width=TFT_LS_WIDTH,    .round = 0, .nbr=TFT_LS_ROWS,   .index = 0, .font_indx = BOX_FONT_SMALL_16,     .font_size = 1 },
-    [BOX_GROUP_4]           = {.height=TFT_LS_HIGHT / TFT_LS_ROWS * 2,  .width=TFT_LS_WIDTH,    .round = 0, .nbr=TFT_LS_ROWS/2, .index = 0, .font_indx = BOX_FONT_LARGE_48,     .font_size = 1 },
-    [BOX_GROUP_3]           = {.height=TFT_LS_HIGHT / 3,                .width=TFT_LS_WIDTH,    .round = 0, .nbr=3,             .index = 0, .font_indx = BOX_FONT_XXL_75,       .font_size = 1 },
-    [BOX_GROUP_2]           = {.height=TFT_LS_HIGHT / TFT_LS_ROWS * 4,  .width=TFT_LS_WIDTH,    .round = 0, .nbr=TFT_LS_ROWS/4, .index = 0, .font_indx = BOX_FONT_7_SEGM_48,    .font_size = 2 },
-    [BOX_GROUP_MENU]        = {.height=TFT_LS_HIGHT / TFT_LS_ROWS ,     .width=TFT_LS_WIDTH/3,  .round = 0, .nbr=3,             .index = 0, .font_indx = BOX_FONT_MEDIUM_26,    .font_size = 1 },
-    [BOX_GROUP_HEAD_ROOM]   = {.height=TFT_LS_HIGHT / TFT_LS_ROWS * 7,  .width=TFT_LS_WIDTH,    .round = 0, .nbr=1,             .index = 0, .font_indx = BOX_FONT_MEDIUM_26,     .font_size = 1 },
+    [BOX_GROUP_1]           = {.height=TFT_LS_HIGHT,                    .width=TFT_LS_WIDTH,    .round = 0, .nbr=1,             .index = 0, .font_indx = BOX_FONT_XXL_75,      .font_size = 2 },
+    [BOX_GROUP_12]           = {.height=TFT_LS_HIGHT / TFT_LS_ROWS,      .width=TFT_LS_WIDTH,    .round = 0, .nbr=TFT_LS_ROWS,  .index = 0, .font_indx = BOX_FONT_SMALL_16,    .font_size = 1 },
+    [BOX_GROUP_6]           = {.height=TFT_LS_HIGHT / TFT_LS_ROWS * 2,  .width=TFT_LS_WIDTH,    .round = 0, .nbr=TFT_LS_ROWS/2, .index = 0, .font_indx = BOX_FONT_MEDIUM_26,   .font_size = 1 },
+    [BOX_GROUP_4]           = {.height=TFT_LS_HIGHT / TFT_LS_ROWS * 3,  .width=TFT_LS_WIDTH,    .round = 0, .nbr=TFT_LS_ROWS/3, .index = 0, .font_indx = BOX_FONT_LARGE_48,    .font_size = 1 },
+    [BOX_GROUP_3]           = {.height=TFT_LS_HIGHT / 3,                .width=TFT_LS_WIDTH,    .round = 0, .nbr=3,             .index = 0, .font_indx = BOX_FONT_XXL_75,      .font_size = 1 },
+    [BOX_GROUP_2]           = {.height=TFT_LS_HIGHT / TFT_LS_ROWS * 4,  .width=TFT_LS_WIDTH,    .round = 0, .nbr=TFT_LS_ROWS/4, .index = 0, .font_indx = BOX_FONT_7_SEGM_48,   .font_size = 2 },
+    [BOX_GROUP_MENU]        = {.height=TFT_LS_HIGHT / TFT_LS_ROWS ,     .width=TFT_LS_WIDTH/3,  .round = 0, .nbr=3,             .index = 0, .font_indx = BOX_FONT_SMALL_16,    .font_size = 1 },
+    [BOX_GROUP_HEAD_ROOM]   = {.height=TFT_LS_HIGHT / TFT_LS_ROWS * 11, .width=TFT_LS_WIDTH,    .round = 0, .nbr=1,             .index = 0, .font_indx = BOX_FONT_MEDIUM_26,   .font_size = 1 },
 };
 
-box_color_st box_color_scheme[10] PROGMEM =
+box_color_st box_color_scheme[BOX_SCHEME_NBR_OF] PROGMEM =
 {
-    [0] = {.fill_color = TFT_BLACK,         .border_color = TFT_LIGHTGREY,      .text_color = TFT_WHITE },
-    [1] = {.fill_color = TFT_BLUE,          .border_color = TFT_YELLOW,         .text_color = TFT_YELLOW },
-    [2] = {.fill_color = TFT_GREENYELLOW,   .border_color = TFT_DARKGREEN,      .text_color = TFT_NAVY },
-    [3] = {.fill_color = TFT_BROWN,         .border_color = TFT_ORANGE,         .text_color = TFT_WHITE },
-    [4] = {.fill_color = TFT_SKYBLUE,       .border_color = TFT_DARKCYAN,       .text_color = TFT_BLACK },
-    [5] = {.fill_color = TFT_SILVER,        .border_color = TFT_GOLD,           .text_color = TFT_BLACK },
-    [6] = {.fill_color = TFT_RED,           .border_color = TFT_YELLOW,         .text_color = TFT_YELLOW },
-    [7] = {.fill_color = TFT_WHITE,         .border_color = TFT_OLIVE,          .text_color = TFT_MAROON },
-    [8] = {.fill_color = TFT_MAROON,        .border_color = TFT_SILVER,         .text_color = TFT_WHITE },
-    [9] = {.fill_color = TFT_DARKCYAN,      .border_color = TFT_WHITE,          .text_color = TFT_WHITE },
+    [BOX_SCHEME_BL_WH]          = {.fill_color = TFT_BLACK,         .border_color = TFT_BLACK,          .text_color = TFT_WHITE },
+    [BOX_SCHEME_BL_WH_BRD]      = {.fill_color = TFT_BLUE,          .border_color = TFT_YELLOW,         .text_color = TFT_YELLOW },
+    [BOX_SCHEME_BLUE_YELLOW]    = {.fill_color = TFT_BLUE,          .border_color = TFT_YELLOW,         .text_color = TFT_YELLOW },
+    [BOX_SCHEME_3]              = {.fill_color = TFT_GREENYELLOW,   .border_color = TFT_DARKGREEN,      .text_color = TFT_NAVY },
+    [BOX_SCHEME_TIME]           = {.fill_color = TFT_BLACK,         .border_color = TFT_BLACK,          .text_color = TFT_ORANGE },
+    [BOX_SCHEME_SENSOR]         = {.fill_color = TFT_DARKCYAN,      .border_color = TFT_DARKCYAN,       .text_color = TFT_BLACK },
+    [BOX_SCHEME_TIMEOUT]        = {.fill_color = TFT_SILVER,        .border_color = TFT_GOLD,           .text_color = TFT_DARKGREY },
+    [BOX_SCHEME_ALARM_HIGH]     = {.fill_color = TFT_RED,           .border_color = TFT_RED,            .text_color = TFT_WHITE },
+    [BOX_SCHEME_ALARM_LOW]      = {.fill_color = TFT_WHITE,         .border_color = TFT_NAVY,           .text_color = TFT_RED },
+    [BOX_SCHEME_9]              = {.fill_color = TFT_MAROON,        .border_color = TFT_SILVER,         .text_color = TFT_WHITE },
+    [BOX_SCHEME_10]             = {.fill_color = TFT_DARKCYAN,      .border_color = TFT_WHITE,          .text_color = TFT_WHITE },
     // [9] = {.fill_color = TFT_CYAN,          .border_color = TFT_MAGENTA,        .text_color = TFT_MAGENTA },
 };
 
@@ -173,7 +182,7 @@ void box_initialize(void)
         uint16_t xpos = 0;
         uint16_t ypos = 0;
         
-        if (box_group == BOX_GROUP_MENU) ypos = TFT_LS_HIGHT / TFT_LS_ROWS * 7;
+        if (box_group == BOX_GROUP_MENU) ypos = TFT_LS_HIGHT / TFT_LS_ROWS * (TFT_LS_ROWS - 1);
 
         uint8_t nbr_boxes = boxgr[box_group].nbr;
         
@@ -206,6 +215,9 @@ void box_initialize(void)
         }
     } 
     box_ctrl.nbr = bindx - 1;
+    box_ctrl.print_area.top     = 8;
+    box_ctrl.print_area.last    = 11;
+    
 }
 
 void box_reserve(uint8_t res_bm)
@@ -222,7 +234,6 @@ bool box_is_not_reserved(void)
     return (box_ctrl.reserve == 0);
 }
 
-
 uint8_t box_get_indx(uint8_t box_group, uint8_t bindx)
 {
     if( bindx < boxgr[box_group].nbr)
@@ -230,17 +241,13 @@ uint8_t box_get_indx(uint8_t box_group, uint8_t bindx)
     else 
         return boxgr[box_group].index;
 }
+
 void box_set_visible(uint8_t box_group, uint8_t bindx, boolean visible )
 {
     uint8_t indx = box_get_indx(box_group, bindx);
     box[bindx].visible = visible;
 }
 
-void box_print_text(uint8_t bindx, char *txt)
-{
-    box[bindx].visible = true;
-    strncpy(box[bindx].txt, txt, BASIC_ROW_LEN);
-}
 
 void box_show_one( uint8_t bindx)
 {
@@ -279,6 +286,31 @@ void box_show_all(void)
             box_show_one( bindx);
             delay(100);
         }
+    }
+}
+
+void box_print_text(uint8_t bindx, char *txt)
+{
+    box[bindx].visible = true;
+    strncpy(box[bindx].txt, txt, BASIC_ROW_LEN);
+    box_show_one(bindx);
+}
+
+
+void box_print_line(char *txt, uint8_t color_sch)
+{
+    uint8_t bindx = box_get_indx(BOX_GROUP_12, box_ctrl.print_area.top);
+    box_scroll_down(BOX_GROUP_12);
+    box_paint(bindx,color_sch);
+    box_print_text(bindx, txt);
+}
+
+void box_update_area(void)
+{
+    uint8_t bindx = box_get_indx(BOX_GROUP_12, box_ctrl.print_area.top);
+    for(uint8_t i= bindx; i <= box_ctrl.print_area.last; i++)
+    {
+        box_show_one(i);
     }
 }
 
@@ -331,14 +363,16 @@ void box_paint(uint8_t bindx, uint8_t color_sch)
 
 void box_scroll_down(uint8_t box_group)
 {
-    uint8_t rows = boxgr[box_group].nbr;
-    uint8_t bindx = boxgr[box_group].index + rows - 1;
-
+    uint8_t rows = box_ctrl.print_area.last - box_ctrl.print_area.top + 1;
+    uint8_t bindx = boxgr[box_group].index + box_ctrl.print_area.last;
+    Serial.printf("box_scroll_down group %d: ",box_group);
     for (uint8_t i = 0; i < rows -1; i++)
-    {
+    {   Serial.printf("%d<-%d, ",bindx,bindx-1);
         box_clone(bindx, bindx - 1);
+        box_show_one(bindx);
         bindx--;
     }
+    Serial.println();
     bindx--;
     box_clear(bindx);
 }
@@ -359,7 +393,6 @@ void box_scroll_test(uint8_t group)
         box_show_group(group);
         color_sch++;
         if(color_sch >= 10) color_sch = 0;
-        //delay(1000);
     }
 
 }
@@ -399,4 +432,50 @@ void box_structure_print(void)
         );
     }
     
+}
+
+
+tft_pin_check_st tft_pin_check[8] =
+{
+    { "BL  ",  PIN_TFT_LED,  TFT_BL},
+    { "CS  ",  PIN_TFT_CS,   TFT_CS}, 
+    { "RST ",  PIN_TFT_RST,  TFT_RST},
+    { "DC  ",  PIN_TFT_DC,   TFT_DC},
+    { "MISO",  PIN_TFT_MISO, TFT_MISO},
+    { "CLK ",  PIN_TFT_CLK,  TFT_SCLK},
+    { "MOSI",  PIN_TFT_MOSI, TFT_MOSI},
+    { "T_CS",  PIN_TOUCH_CS, TOUCH_CS},  
+};
+
+void box_run_tft_pin_check(void)
+{
+    bool tft_setup_is_ok = true;
+    #if TFT_TARGET_BOARD == BOARD_PICO_TFT_4KEYS
+        Serial.println("BOARD_PICO_TFT_4KEYS was defined - OK");
+    #else
+        Serial.println("BOARD_PICO_TFT_4KEYS was NOT defined - ERROR");
+        tft_setup_is_ok = false
+    #endif    
+    #ifdef ILI9341_DRIVER
+        Serial.println("ILI9341_DRIVER was defined - OK");
+    #else
+        Serial.println("ILI9341_DRIVER was not defined - ERROR");
+        tft_setup_is_ok = false
+    #endif
+    Serial.println("Pin  Design Library");
+    for (uint8_t i = 0; i<8;i++)
+    {
+        Serial.print(tft_pin_check[i].label);
+        Serial.print(": ");
+        Serial.print(tft_pin_check[i].design_pin);
+        Serial.print(" --> ");
+        Serial.print(tft_pin_check[i].library_pin);
+        if(tft_pin_check[i].design_pin == tft_pin_check[i].library_pin)
+            Serial.println(" OK");
+        else {
+            tft_setup_is_ok = false;
+            Serial.println(" ERROR");
+        }  
+    }
+
 }

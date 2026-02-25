@@ -42,8 +42,6 @@ void dashboard_set_text(uint8_t box_indx, char *txt_ptr);
 
 void dashboard_set_mode(dashboard_mode_et new_mode);
 
-void dashboard_print_row(int8_t rindx, char *txtp, uint16_t txt_colour, uint16_t bgnd_colour);
-
 void dashboard_debug_print(void);
 
 void dashboard_update_task();

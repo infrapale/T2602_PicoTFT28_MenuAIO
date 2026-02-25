@@ -82,27 +82,15 @@ DateTime *time_get_time_now(void)
 }
 
 
-void time_to_string(String *Str)
+void time_to_string(char *buff)
 {
-  DateTime now = rtc.now();
-  char s[4];
-
-  *Str = String("");
-  *Str += now.year();
-  *Str += String("-");
-  *Str += now.month();
-  *Str += String("-");
-  *Str += now.day();
-  *Str += String(" ");
-
-  sprintf(s,"%02d",now.hour());
-  *Str += s;
-  *Str += ":";
-  sprintf(s,"%02d",now.minute());
-  *Str += s;
-  *Str += ":";
-  sprintf(s,"%02d",now.second());
-  *Str += s;
+    DateTime now = rtc.now();
+    sprintf(buff, "%s %d-%d-%d",
+        week_day[now.dayOfTheWeek()],
+        now.year(),
+        now.month(),
+        now.day()
+    );   
 }
 
 uint32_t time_get_epoc_time(void)

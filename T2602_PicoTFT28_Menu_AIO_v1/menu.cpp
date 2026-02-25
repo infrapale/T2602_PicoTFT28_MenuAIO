@@ -1,6 +1,5 @@
 
 #include "main.h"
-#include <TFT_eSPI.h> 
 #include "menu.h"
 #include "atask.h"
 #include "BtnPinOnOff.h"
@@ -9,7 +8,6 @@
 
 #define NBR_MENU_KEYS  4
 
-extern TFT_eSPI tft;
 
 void dummy_cb()
 {
@@ -162,7 +160,7 @@ void menu_state_machine(void)
 
 void menu_draw(void)
 {
-    uint8_t bindx = box_get_indx(BOX_GROUP_8, 6);
+    uint8_t bindx = box_get_indx(BOX_GROUP_12, 6);
     box_paint(bindx, 0);
     box_print_text(bindx, menu[menu_ctrl.active].row_label);
     box_show_one(bindx);

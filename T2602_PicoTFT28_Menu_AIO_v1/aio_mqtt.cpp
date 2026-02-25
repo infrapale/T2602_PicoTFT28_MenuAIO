@@ -26,6 +26,7 @@
 #include "atask.h"
 #include "time_func.h"
 #include "log.h"
+#include "box.h"
 #include "dashboard.h"
 
 typedef struct 
@@ -179,16 +180,16 @@ void print_subs_data(uint8_t subs_indx)
 
     if (subs_data[subs_indx].state == SENSOR_TIMEOUT) {
         sprintf(buff, "%s Timeout", subs_data[subs_indx].location );  
-        dashboard_print_row(-1, buff, TFT_WHITE, TFT_DARKCYAN);
+        box_print_line(buff, BOX_SCHEME_TIMEOUT);
         Serial.println("Sensor Timeout");
         subs_data[subs_indx].state = SENSOR_ACTIVE;
     }
     else if(subs_data[subs_indx].value > subs_data[subs_indx].max_value)
-      dashboard_print_row(-1, buff, TFT_WHITE, TFT_RED);
+      box_print_line(buff, BOX_SCHEME_ALARM_HIGH);
     else if (subs_data[subs_indx].value < subs_data[subs_indx].min_value)
-      dashboard_print_row(-1, buff, TFT_WHITE, TFT_BLUE);
+      box_print_line(buff, BOX_SCHEME_ALARM_LOW);
     else
-      dashboard_print_row(-1, buff, TFT_WHITE, TFT_DARKCYAN);
+      box_print_line(buff, BOX_SCHEME_BLUE_YELLOW);
 }
 
 

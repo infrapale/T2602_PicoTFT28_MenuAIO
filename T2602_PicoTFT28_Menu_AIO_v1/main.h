@@ -9,9 +9,9 @@
 #define TFT_TARGET_BOARD            BOARD_PICO_TFT_4KEYS
 
 
-//#define PIRPANA
-//#define LILLA_ASTRID
-#define VILLA_ASTRID
+#define PIRPANA
+// #define LILLA_ASTRID
+// #define VILLA_ASTRID
 
 #include "io.h"
 #include "atask.h"
@@ -23,7 +23,7 @@
 #define MEASURE_LABEL_LEN   16
 
 #define APP_NAME   "T2602_PicoTFT28_AIO_v1"
-#define MAIN_TITLE "Villa Astrid Console"
+#define MAIN_TITLE "TFT 2.8 Inc Console"
 
 typedef enum 
 {
