@@ -23,7 +23,7 @@
 #define MEASURE_LABEL_LEN   16
 
 #define APP_NAME   "T2602_PicoTFT28_AIO_v1"
-#define MAIN_TITLE "TFT 2.8 Inc Console"
+#define MAIN_TITLE "TFT 2.8 Inch Console"
 
 typedef enum 
 {
