@@ -239,6 +239,12 @@ void activate_subscriptions(void)
     }
 }
 
+void aio_mqtt_stm_status(void)
+{
+    Serial.printf("aio_mqtt_state %d aio connected: %d\n",
+        aio_mqtt_task.state, aio_mqtt_ctrl.connected);
+}
+
 void aio_mqtt_stm(void)
 {
     if ( aio_mqtt_task.prev_state != aio_mqtt_task.state)
@@ -249,11 +255,12 @@ void aio_mqtt_stm(void)
         Serial.println(aio_mqtt_task.state);
         aio_mqtt_task.prev_state = aio_mqtt_task.state;
     }
-
+ 
     switch(aio_mqtt_task.state)
     {
         case 0:
           aio_mqtt_task.state = 10;
+          Serial.printf("WiFi: %s - %s\n",WIFI_SSID, WIFI_PASS);
           break;
         case 10:
             WiFi.begin(WIFI_SSID, WIFI_PASS);

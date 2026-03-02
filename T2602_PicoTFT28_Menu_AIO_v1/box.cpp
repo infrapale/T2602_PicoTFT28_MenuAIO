@@ -29,7 +29,7 @@
 #include <TFT_eSPI.h> 
 
 
-#define BOX_MAX_NUMBER      32
+#define BOX_MAX_NUMBER      40
 #define BOX_DEFAULT_GROUP   0
 
 typedef struct

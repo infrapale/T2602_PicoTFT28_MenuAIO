@@ -27,6 +27,7 @@ void print_debug_task(void)
 {
   atask_print_status(true);
   dashboard_debug_print();
+  aio_mqtt_stm_status();
 }
 
 //                                  123456789012345   ival  next  state  prev  cntr flag  call backup

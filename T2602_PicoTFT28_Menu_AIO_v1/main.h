@@ -9,9 +9,9 @@
 #define TFT_TARGET_BOARD            BOARD_PICO_TFT_4KEYS
 
 
-#define PIRPANA
+//#define PIRPANA
 // #define LILLA_ASTRID
-// #define VILLA_ASTRID
+#define VILLA_ASTRID
 
 #include "io.h"
 #include "atask.h"
